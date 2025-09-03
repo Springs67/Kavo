@@ -1,5 +1,3 @@
-local HttpService = game:GetService('HttpService')
-
 local GuiLibrary = {
     Start = function(self, Tab)
         local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
@@ -39,7 +37,7 @@ local GuiLibrary = {
                         local ToggleReturn = {
                             Enabled = false,
                             Toggle = function(self, val)
-                                self.Enabled = not self.Enabled
+                                self.Enabled = val or not self.Enabled
                                 task.spawn(function()
                                     local suc, ret = pcall(function()
                                         Toggle.Function(self.Enabled)
@@ -99,7 +97,7 @@ local GuiLibrary = {
                         local ColorPickerReturn = {Value = {255,255,255}}
 
                         local NewColorPicker = Section:NewColorPicker(ColorPicker.Name, ColorPicker.Description, ColorPickerReturn.Value, function(val)
-                            ColorPickerReturn.Value = val -- no clue what they return here, ill figure it our when I get home fr
+                            ColorPickerReturn.Value = val
                             if ColorPicker.Function then
                                 local suc, ret = pcall(ColorPicker.Function)
 
