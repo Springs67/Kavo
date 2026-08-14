@@ -1,5 +1,5 @@
 local Kavo = loadstring(game:HttpGet('https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua'))()
-local Window = Kavo.CreateLib('One Shot', 'Ocean')
+local Window = Kavo.CreateLib('One Shot', 'Serpent')
 
 local GuiLibrary = {
     Tabs = {},
@@ -18,6 +18,8 @@ for _, value in {
     GuiLibrary.Tabs[value] = Section
 end
 
-shared.GuiLibrary = GuiLibrary;
+GuiLibrary.Tabs.Render:NewKeybind('UI Toggle', 'Toggle the ui visiblity', Enum.KeyCode.RightShift, function()
+	Kavo:ToggleUI()
+end)
 
 return GuiLibrary;

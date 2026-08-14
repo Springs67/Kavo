@@ -28,6 +28,7 @@ shared.downloadFile = downloadFile
 
 local Games = loadstring(downloadFile('Kavo/Games.luau'))()
 
+loadstring(downloadFile('Kavo/Games/Universal.luau'))()
 for index, value in Games do
     if typeof(value) == 'number' then
         if game.PlaceId == value then
