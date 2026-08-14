@@ -19,8 +19,8 @@ GuiLibrary.Tabs.Movement:NewSlider('Speed', 'Allows you to move faster.', 100, 0
 end)
 
 local old = (lplr.Character or lplr.CharacterAdded:Wait()):WaitForChild('Humanoid').WalkSpeed
-runService:BindToRenderStep('Speed', Enum.RenderPriority.First.Value + 1, function(dt: number)
-    if not isAlive() then
+runService:BindToRenderStep('UniversalActions', Enum.RenderPriority.First.Value + 1, function(dt: number)
+    if not isAlive() or not speedEnabled then
         return
     end
 
