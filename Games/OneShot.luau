@@ -222,7 +222,7 @@ lplr.CharacterAdded:Connect(function(character)
 end)
 
 local old; old = hookfunction(OneShot.zap.shoot.fire, function(data)
-    if silentAimEnabled then
+    if silentAimEnabled and not data.target then
         local nearest = getNearestToMouse()
 
         if nearest then
@@ -236,7 +236,7 @@ local old; old = hookfunction(OneShot.zap.shoot.fire, function(data)
                 })
             end
 
-            data.origin = nearest.Character.PrimaryPart.CFrame.Position
+            data.origin += Vector3.new(0, 9, 0)
             data.direction = -(lplr.Character.PrimaryPart.CFrame.Position - nearest.Character.PrimaryPart.CFrame.Position).Unit
             data.is_headshot = true
             data.is_airborne = true
