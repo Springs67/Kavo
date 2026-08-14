@@ -1,11 +1,56 @@
 local GuiLibrary = shared.GuiLibrary
 
+local inputService: UserInputService = cloneref(game:GetService('UserInputService'))
 local runService: RunService = cloneref(game:GetService('RunService'))
+local players: Players = cloneref(game:GetService('Players'))
 
-local lplr: Player = cloneref(game:GetService('Players')).LocalPlayer
+local lplr: Player = players.LocalPlayer
+local gameCamera = workspace.CurrentCamera
 
-local isAlive = function()
-    return lplr.Character and lplr.Character.PrimaryPart and lplr.Character:FindFirstChild('Humanoid') and lplr.Character:FindFirstChild('Humanoid').Health > 0
+local isAlive = function(v)
+    v = v or lplr
+
+    return v.Character and v.Character.PrimaryPart and v.Character:FindFirstChild('Humanoid') and v.Character:FindFirstChild('Humanoid').Health > 0
+end
+
+local getNearestToMouse = function()
+    local Nearest, Distance = nil, math.huge;
+
+    for _, value in players:GetPlayers() do
+        if not isAlive(value) then
+            continue;
+        end;
+
+        local screenPos, onScreen = gameCamera:WorldToViewportPoint(value.Character.PrimaryPart.Position)
+
+        if onScreen and screenPos.Z > 0 then
+            local playerPos = Vector2.new(screenPos.X, screenPos.Y)
+
+            local distance = (inputService:GetMouseLocation() - playerPos).Magnitude
+
+            if distance < Distance then
+                Distance = distance
+                Nearest = value;
+            end
+        end
+    end
+
+    for _, value in workspace.bots:GetChildren() do
+        local screenPos, onScreen = gameCamera:WorldToViewportPoint(value.PrimaryPart.Position)
+
+        if onScreen and screenPos.Z > 0 then
+            local playerPos = Vector2.new(screenPos.X, screenPos.Y)
+
+            local distance = (inputService:GetMouseLocation() - playerPos).Magnitude
+
+            if distance < Distance then
+                Distance = distance
+                Nearest = value;
+            end
+        end
+    end
+
+    return Nearest;
 end
 
 local OneShot = {
@@ -18,7 +63,14 @@ local OneShot = {
     FlyController = require(game:GetService("ReplicatedStorage").client.controllers.FlyController),
 
     GameStateController = require(game:GetService("ReplicatedStorage").client.controllers.GameStateController),
+
+    zap = require(game:GetService("ReplicatedStorage").client.zap)
 }
+
+local silentAimEnabled = false
+GuiLibrary.Tabs.Combat:NewToggle('Silent Aim', 'Hits the enemy when you arent aiming at them.', function(state)
+    silentAimEnabled = state
+end)
 
 local triggerEnabled = false
 local noCooldownEnabled = false
@@ -88,9 +140,25 @@ local disablerEnabled = false
     disablerEnabled = state
 end)]]
 
+--[[local autoVoteEnabled = false
+GuiLibrary.Tabs.Misc:NewToggle('Auto Vote', 'Automatically Votes for your map of choosing.', function(state)
+    autoVoteEnabled = state
+
+    if state then
+        repeat
+            task.wait(0.5)
+            if not OneShot.GameStateController.is_in_game then
+                continue
+            end
+
+
+        until not autoVoteEnabled
+    end
+end)]]
+
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
-rayParams.FilterDescendantsInstances = {lplr.Character or lplr.CharacterAdded:Wait()}
+rayParams.FilterDescendantsInstances = {lplr.Character}
 
 local isGrounded = function()
     local raycast: RaycastResult = workspace:Raycast(lplr.Character.PrimaryPart.CFrame.Position + Vector3.new(0, 5, 0), Vector3.new(0, -10, 0), rayParams)
@@ -100,6 +168,16 @@ local isGrounded = function()
     end
 
     return false
+end
+
+local canSee = function(model: Model)
+    local rayParams2 = RaycastParams.new()
+    rayParams2.FilterType = Enum.RaycastFilterType.Include
+    rayParams2.FilterDescendantsInstances = {model, workspace.Lobby}
+
+    local rayCast = workspace:Raycast(lplr.Character.PrimaryPart.CFrame.Position, (lplr.Character.PrimaryPart.CFrame.Position - model.PrimaryPart.CFrame.Position).Unit * 9e9, rayParams2)
+
+    return not rayCast
 end
 
 local lastGrounded = tick()
@@ -142,3 +220,37 @@ lplr.CharacterAdded:Connect(function(character)
         OneShot.FlyController:set_fly(true)
     end
 end)
+
+local old; old = hookfunction(OneShot.zap.shoot.fire, function(data)
+    if silentAimEnabled then
+        local nearest = getNearestToMouse()
+
+        if nearest then
+            if nearest:IsA('Model') then
+                return OneShot.zap.shoot_dummy.fire({
+                    dummy = nearest,
+                    direction = -(lplr.Character.PrimaryPart.CFrame.Position - nearest.PrimaryPart.CFrame.Position).Unit,
+                    is_headshot = true,
+                    is_airborne = true,
+                    origin = data.origin,
+                })
+            end
+
+            data.origin = nearest.Character.PrimaryPart.CFrame.Position
+            data.direction = -(lplr.Character.PrimaryPart.CFrame.Position - nearest.Character.PrimaryPart.CFrame.Position).Unit
+            data.is_headshot = true
+            data.is_airborne = true
+            data.target = nearest
+        end
+    end
+    return old(data)
+end)
+
+--[[local old; old = hookfunction(OneShot.zap.shoot_dummy.fire, function(data)
+    if silentAimEnabled then
+        for index, value in data do
+            print(index, value, typeof(value), (typeof(value) == 'Instance' and value.ClassName or nil))
+        end
+    end
+    return old(data)
+end)]]
